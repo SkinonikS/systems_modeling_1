@@ -1,0 +1,6 @@
+.streamlit
+__pycache__
+systems_modeling_venv
+report.docx
+~$*.docx
+~WRL*.tmp

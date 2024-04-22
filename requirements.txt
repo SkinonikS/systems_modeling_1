@@ -1,0 +1,6 @@
+streamlit==1.33.*
+scipy==1.13.*
+numpy==1.26.*
+statsmodels==0.14.*
+plotly==5.21.*
+# pyinstaller==6.6.*
