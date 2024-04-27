@@ -13,23 +13,37 @@ class SimulationStats:
         total_left_in_queue: int = 0,
         total_immediate_service_count: int = 0,
         total_arrived_event_count: int = 0,
+        total_service_time: float = 0.0,
+        total_waiting_time: float = 0.0,
         server_idle_item: float = 0.0,
-        server_idle_coefficient: float = 0.0,
-        average_waiting_time: float = 0.0,
-        average_service_time: float = 0.0,
-        probability_immediate_service: float = 0.0,
+        final_simulation_time: float = 0.0,
         event_stats: dict[str, EventStatsType] = {},
     ) -> None:
+        self.total_service_time = total_service_time
+        self.total_waiting_time = total_waiting_time
         self.total_completed_event_count = total_completed_event_count
         self.total_left_in_queue = total_left_in_queue
         self.total_immediate_service_count = total_immediate_service_count
         self.total_arrived_event_count = total_arrived_event_count
         self.server_idle_item = server_idle_item
-        self.server_idle_coefficient = server_idle_coefficient
-        self.average_waiting_time = average_waiting_time
-        self.average_service_time = average_service_time
-        self.probability_immediate_service = probability_immediate_service
+        self.final_simulation_time = final_simulation_time
         self.event_stats = event_stats
+    
+    @property
+    def server_idle_coefficient(self) -> float:
+        return self.server_idle_item / self.final_simulation_time
+
+    @property
+    def average_service_time(self) -> float:
+        return self.total_service_time / self.total_arrived_event_count
+
+    @property
+    def average_waiting_time(self) -> float:
+        return self.total_waiting_time / self.total_arrived_event_count
+
+    @property
+    def probability_immediate_service(self) -> float:
+        return self.total_immediate_service_count / self.total_arrived_event_count
 
 class EventCalculatedStatsItem:
     def __init__(
@@ -179,7 +193,7 @@ class DepartureEventHandler:
             arrival_event_handler = simulation_instance.get_arrival_event_handler(queue_event_type)
 
             if arrival_event_handler != None:
-                queue_event_wait_time = simulation_data.current_time - queue_event_arrival_time
+                queue_event_waiting_time = simulation_data.current_time - queue_event_arrival_time
                 event_stats = simulation_data.event_stats[queue_event_type]
                 
                 service_time = arrival_event_handler.get_service_time_generator().rvs()
@@ -187,8 +201,8 @@ class DepartureEventHandler:
                 simulation_data.end_time = simulation_data.current_time + service_time
 
                 event_stats.completed_event_count += 1
-                event_stats.waiting_time += queue_event_wait_time
-                event_stats.service_time += queue_event_wait_time + service_time
+                event_stats.waiting_time += queue_event_waiting_time
+                event_stats.service_time += queue_event_waiting_time + service_time
         else:
             simulation_data.is_server_busy = False
             simulation_data.end_time = simulation_time + 1
@@ -275,14 +289,10 @@ class Simulation:
         self._arrival_event_handlers[arrival_event_handler.get_event_type()] = arrival_event_handler
 
     def _calculate_simulation_stats(self, simulation_data: SimulationData) -> SimulationStats:
-        simulation_stats = SimulationStats()
-        
-        total_service_time = 0.0
-        total_waiting_time = 0.0
-        total_arrived_event_count = 0
-        total_immediate_service_count = 0
-        total_left_in_queue = 0
-        total_completed_event_count = 0
+        simulation_stats = SimulationStats(
+            final_simulation_time=simulation_data.current_time,
+            server_idle_item=simulation_data.server_idle_time,
+        )
 
         for key in self._arrival_event_handlers.keys():
             event_stats = simulation_data.event_stats.get(key)
@@ -292,12 +302,12 @@ class Simulation:
             
             left_in_queue = sum(1 for x in simulation_data.event_queue if x[0] == key)
 
-            total_left_in_queue += left_in_queue
-            total_immediate_service_count += event_stats.immediate_service_count
-            total_service_time += event_stats.service_time
-            total_waiting_time += event_stats.waiting_time
-            total_arrived_event_count += event_stats.arrived_event_count
-            total_completed_event_count += event_stats.completed_event_count
+            simulation_stats.total_left_in_queue += left_in_queue
+            simulation_stats.total_immediate_service_count += event_stats.immediate_service_count
+            simulation_stats.total_service_time += event_stats.service_time
+            simulation_stats.total_waiting_time += event_stats.waiting_time
+            simulation_stats.total_arrived_event_count += event_stats.arrived_event_count
+            simulation_stats.total_completed_event_count += event_stats.completed_event_count
             
             calcualted_event_stats = EventCalculatedStatsItem(
                 left_in_queue=left_in_queue,
@@ -310,16 +320,6 @@ class Simulation:
                 calculated=calcualted_event_stats
             )
         
-        simulation_stats.total_left_in_queue = total_left_in_queue
-        simulation_stats.total_completed_event_count = total_completed_event_count
-        simulation_stats.total_immediate_service_count = total_immediate_service_count
-        simulation_stats.total_arrived_event_count = total_arrived_event_count
-        simulation_stats.probability_immediate_service = total_immediate_service_count / total_arrived_event_count
-        simulation_stats.average_waiting_time = total_waiting_time / total_arrived_event_count
-        simulation_stats.average_service_time = total_service_time / total_arrived_event_count
-        simulation_stats.server_idle_item = simulation_data.server_idle_time
-        simulation_stats.server_idle_coefficient = simulation_data.server_idle_time / simulation_data.current_time
-
         return simulation_stats  
 
 class EventStats(dict[str, EventStatsItem]):
