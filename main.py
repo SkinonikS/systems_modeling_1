@@ -144,7 +144,7 @@ def __draw_generators_test_distribution_plot(test_results: test_generators.Teste
     fig = pl.Figure()
 
     fig.add_trace(pl.Bar(
-        x=test_results.results.dist.bin_edges[:-1],
+        x=test_results.results.dist.bin_edges,
         y=test_results.results.dist.hist,
         name='Эмпирическое',
         marker_color='green',

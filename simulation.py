@@ -292,11 +292,11 @@ class Simulation:
             
             left_in_queue = sum(1 for x in simulation_data.event_queue if x[0] == key)
 
+            total_left_in_queue += left_in_queue
             total_immediate_service_count += event_stats.immediate_service_count
             total_service_time += event_stats.service_time
             total_waiting_time += event_stats.waiting_time
             total_arrived_event_count += event_stats.arrived_event_count
-            total_left_in_queue += left_in_queue
             total_completed_event_count += event_stats.completed_event_count
             
             calcualted_event_stats = EventCalculatedStatsItem(
@@ -310,6 +310,7 @@ class Simulation:
                 calculated=calcualted_event_stats
             )
         
+        simulation_stats.total_left_in_queue = total_left_in_queue
         simulation_stats.total_completed_event_count = total_completed_event_count
         simulation_stats.total_immediate_service_count = total_immediate_service_count
         simulation_stats.total_arrived_event_count = total_arrived_event_count

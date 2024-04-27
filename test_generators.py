@@ -4,6 +4,7 @@ import typing as t
 import scipy.stats as st
 import numpy as np
 import statsmodels.tsa.stattools as ts
+import dataclasses as dc
 
 # Types
 T_TesterResult = t.TypeVar('T_TesterResult' , bound=t.NamedTuple)
@@ -169,7 +170,7 @@ class DistributionTest(TestInterface[DistributionTestResult]):
         generator: rv_continuous_frozen | rv_discrete_frozen,
         config: TestConfig,
     ) -> DistributionTestResult:
-        hist, bin_edges = np.histogram(sample, bins=config.bins-1)
+        hist, bin_edges = np.histogram(sample, bins=config.bins)
 
         x = np.linspace(start=min(sample), stop=max(sample), num=config.sample_size)
         y = generator.pdf(x) * config.sample_size * np.diff(bin_edges)[0]
@@ -177,7 +178,8 @@ class DistributionTest(TestInterface[DistributionTestResult]):
         return DistributionTestResult(hist=hist.tolist(), bin_edges=bin_edges.tolist(), x=x.tolist(), y=y)
 
 # Tester
-class TesterResult(t.NamedTuple, t.Generic[T_TesterResult]):
+@dc.dataclass
+class TesterResult(t.Generic[T_TesterResult]):
     sample: list[float]
     results: T_TesterResult
 
