@@ -246,6 +246,16 @@ class Simulation:
             simulation_data.event_stats[key] = EventStatsItem()
             simulation_data.event_arrival_times[key] = e.get_arrival_time_generator().rvs()
 
+        simulation_data.event_log.append(EventLogItem(
+            event_type='Start',
+            current_time=simulation_data.current_time,
+            end_time=simulation_data.end_time,
+            is_server_busy=simulation_data.is_server_busy,
+            event_queue=simulation_data.event_queue,
+            event_arrival_times=simulation_data.event_arrival_times,
+            event_log=simulation_data.event_log,
+        ))
+
         while simulation_data.current_time < simulation_time:
             next_event_list = (simulation_data.event_arrival_times | {None: simulation_data.end_time}).items()
             next_event_type, next_event_arrival_time = min(next_event_list, key=lambda x: x[1])
