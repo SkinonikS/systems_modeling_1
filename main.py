@@ -114,7 +114,7 @@ def __draw_simulation_result_stats(simulation_result: simulation.SimulationResul
         ('Всего осталось в очереди', simulation_result.simulation_stats.total_left_in_queue),
         ('Суммарное время ожидания', simulation_result.simulation_stats.total_waiting_time),
         ('Суммарное время обслуживания', simulation_result.simulation_stats.total_service_time),
-        ('Суммарное время простоя сервера', simulation_result.simulation_stats.server_idle_item),
+        ('Суммарное время простоя сервера', simulation_result.simulation_stats.server_idle_time),
         ('Коэффициэнт простоя сервера', simulation_result.simulation_stats.server_idle_coefficient),
         ('Вероятность обслуживания заявки без очереди', simulation_result.simulation_stats.probability_immediate_service),
     ]

@@ -15,7 +15,7 @@ class SimulationStats:
         total_arrived_event_count: int = 0,
         total_service_time: float = 0.0,
         total_waiting_time: float = 0.0,
-        server_idle_item: float = 0.0,
+        server_idle_time: float = 0.0,
         final_simulation_time: float = 0.0,
         event_stats: dict[str, EventStatsType] = {},
     ) -> None:
@@ -25,13 +25,13 @@ class SimulationStats:
         self.total_left_in_queue = total_left_in_queue
         self.total_immediate_service_count = total_immediate_service_count
         self.total_arrived_event_count = total_arrived_event_count
-        self.server_idle_item = server_idle_item
+        self.server_idle_time = server_idle_time
         self.final_simulation_time = final_simulation_time
         self.event_stats = event_stats
     
     @property
     def server_idle_coefficient(self) -> float:
-        return self.server_idle_item / self.final_simulation_time
+        return self.server_idle_time / self.final_simulation_time
 
     @property
     def average_service_time(self) -> float:
@@ -291,7 +291,7 @@ class Simulation:
     def _calculate_simulation_stats(self, simulation_data: SimulationData) -> SimulationStats:
         simulation_stats = SimulationStats(
             final_simulation_time=simulation_data.current_time,
-            server_idle_item=simulation_data.server_idle_time,
+            server_idle_time=simulation_data.server_idle_time,
         )
 
         for key in self._arrival_event_handlers.keys():
