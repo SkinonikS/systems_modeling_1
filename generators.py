@@ -20,8 +20,8 @@ class Generator:
     def get_sigma(self) -> float:
         pass
 
-    def _call(self, x: int | float | list[float], resolver: typing.Callable[[int | float], float]) -> float | list[float]:
-        values = []
+    def _call(self, x: int | float | list[float] | tuple[float, ...], resolver: typing.Callable[[int | float], float]) -> float | list[float]:
+        values: list[float] = []
 
         if isinstance(x, int):
             for i in range(x):
@@ -29,8 +29,8 @@ class Generator:
 
                 values.append(resolver(r))
         else:
-            if isinstance(x, list) == False:
-                x = list[x]
+            if isinstance(x, (list, tuple)) == False:
+                x = [x]
             
             for i in x:
                 i = np.max([0, i])
