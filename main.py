@@ -7,6 +7,7 @@ import collections
 import simulation
 import random
 import test_generators
+import generators as gen
 
 # Constants
 K_ERLANG = 3 # l для Erlanga (L1)
@@ -22,17 +23,17 @@ SAMPLE_SIZE = 1000 # Размер генерируемых значений
 ALPHA_SIGNIFICANCE_LEVEL = 0.05 # Уровень значимости α
 
 # Generators
-def get_l2_service_time_generator()  -> st.rv_frozen:
-    return st.expon(scale=1/s.session_state.lambda_expon)
+def get_l2_service_time_generator() -> gen.Generator:
+    return gen.ExponentialGenerator(s.session_state.lambda_expon)
 
-def get_l2_arrival_time_generator() -> st.rv_frozen:
-    return st.expon(scale=s.session_state.mean_poisson)
+def get_l2_arrival_time_generator() -> gen.Generator:
+    return gen.PoissonGenerator(s.session_state.mean_poisson)
 
-def get_l1_service_time_generator() -> st.rv_frozen:
-    return st.norm(loc=s.session_state.mu_normal, scale=s.session_state.sigma_normal)
+def get_l1_service_time_generator() -> gen.Generator:
+    return gen.NormalGenerator(s.session_state.mu_normal, s.session_state.sigma_normal)
 
-def get_l1_arrival_time_generator() -> st.rv_frozen:
-    return st.erlang(a=s.session_state.k_erlang, scale=1/s.session_state.lambda_erlang)
+def get_l1_arrival_time_generator() -> gen.Generator:
+    return gen.ErlangGenerator(s.session_state.k_erlang, s.session_state.lambda_erlang)
 
 # Simulation result draw logic
 def __draw_simulation_result_plot(simulation_result: simulation.SimulationResult, registered_events: list[str]) -> None:
@@ -342,7 +343,6 @@ def main() -> None:
             dist_headers = {
                 'l1_arrival': 'Распределение Эрланга',
                 'l1_service': 'Нормальное распределение',
-                'l2_arrival': 'Распределение Пуассона',
                 'l2_service': 'Экспоненциальное распределение',
             }
 
@@ -356,7 +356,6 @@ def main() -> None:
                 generators={
                     'l1_arrival': get_l1_arrival_time_generator(),
                     'l1_service': get_l1_service_time_generator(),
-                    'l2_arrival': get_l2_arrival_time_generator(),
                     'l2_service': get_l2_service_time_generator(),
                 },
                 result_factory=lambda x: TestsResults(**x),

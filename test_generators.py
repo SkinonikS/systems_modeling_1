@@ -1,10 +1,10 @@
 from __future__ import annotations
-from scipy.stats._distn_infrastructure import rv_continuous_frozen, rv_discrete_frozen
 import typing as t
 import scipy.stats as st
 import numpy as np
 import statsmodels.tsa.stattools as ts
 import dataclasses as dc
+import generators as gen
 
 # Types
 T_TesterResult = t.TypeVar('T_TesterResult' , bound=t.NamedTuple)
@@ -34,7 +34,7 @@ class TestInterface(t.Generic[T_TestResult]):
     def run(
         self,
         sample: list[float],
-        generator: st.rv_frozen,
+        generator: gen.Generator,
         config: TestConfig,
     ) -> T_TestResult:
         pass
@@ -59,33 +59,23 @@ class KolmagorovSmirnovChiSquareTest(TestInterface[KolmagorovSmirnovChiSquareTes
     def run(
         self,
         sample: list[float],
-        generator: rv_continuous_frozen | rv_discrete_frozen,
+        generator: gen.Generator,
         config: TestConfig,
     ) -> KolmagorovSmirnovChiSquareTestResult:
-        # Calculate the number of bins for chi-squared test
-        # Typically, the square root of the number of observations is used as a rule of thumb
         num_bins = int(np.sqrt(config.sample_size))
-        # Create observed frequency counts
         observed_counts, bin_edges = np.histogram(sample, bins=num_bins)
-        # Generate the expected frequencies
-        expected_counts = config.sample_size * np.diff(generator.cdf(bin_edges))
+        expected_counts = config.sample_size * np.diff(generator.cdf(bin_edges.tolist()))
 
-        # Ensure that the expected frequencies are not too small, which might invalidate the test
-        # Combine bins if necessary to ensure each expected count is at least 5
         while np.any(expected_counts < 5):
-            num_bins -= 1  # Reduce the number of bins
+            num_bins -= 1
             observed_counts, bin_edges = np.histogram(sample, bins=num_bins)
-            expected_counts = config.sample_size * np.diff(generator.cdf(bin_edges))
+            expected_counts = config.sample_size * np.diff(generator.cdf(bin_edges.tolist()))
 
-        # Perform chi-squared test
         chi2_criteria, chi2_p_value = st.chi2_contingency([observed_counts, expected_counts])[0:2]
-        # Calculate the degrees of freedom for the chi-squared test
-        # Degrees of freedom for chi-squared test is (number of bins - 1) 
-        # because the distribution parameters were not estimated from the sample
         chi2_df = num_bins - 1
         chi_critical_value = st.chi2.ppf(1 - config.alpha, chi2_df)
 
-        ks_stat, ks_p_value = st.kstest(sample, generator.cdf)
+        ks_stat, ks_p_value = st.kstest(sample, lambda x: generator.cdf(x.tolist()))
         ks_criteria = ks_stat * np.sqrt(config.sample_size)
         ks_critical_value = np.sqrt(-0.5 * np.log(config.alpha / 2))
 
@@ -114,7 +104,7 @@ class AutocorrelationFunctionTest(TestInterface[AutocorrelationFunctionResult]):
     def run(
         self,
         sample: list[float],
-        generator: rv_continuous_frozen | rv_discrete_frozen,
+        generator: gen.Generator,
         config: TestConfig,
     ) -> AutocorrelationFunctionResult:
         acf = ts.acf(sample, nlags=config.lags, fft=True)
@@ -143,11 +133,11 @@ class CompareParametersTest(TestInterface[CompareParametersResult]):
     def run(
         self,
         sample: list[float],
-        generator: rv_continuous_frozen | rv_discrete_frozen,
+        generator: gen.Generator,
         config: TestConfig,
     ) -> CompareParametersResult:
         actual_mu, actual_sigma = np.mean(sample), np.std(sample)
-        expected_mu, expected_sigma = generator.mean(), generator.std()
+        expected_mu, expected_sigma = generator.get_mu(), generator.get_sigma()
 
         return CompareParametersResult(
             actual_mu=actual_mu,
@@ -167,13 +157,13 @@ class DistributionTest(TestInterface[DistributionTestResult]):
     def run(
         self,
         sample: list[float],
-        generator: rv_continuous_frozen | rv_discrete_frozen,
+        generator: gen.Generator,
         config: TestConfig,
     ) -> DistributionTestResult:
-        hist, bin_edges = np.histogram(sample, bins=config.bins)
+        hist, bin_edges = np.histogram(sample, bins=config.bins, density=True)
 
         x = np.linspace(start=min(sample), stop=max(sample), num=config.sample_size)
-        y = generator.pdf(x) * config.sample_size * np.diff(bin_edges)[0]
+        y = generator.pdf(x.tolist())
 
         return DistributionTestResult(hist=hist.tolist(), bin_edges=bin_edges.tolist(), x=x.tolist(), y=y)
 
@@ -188,7 +178,7 @@ class Tester(t.Generic[T_TesterResult]):
         self,
         result_factory: t.Callable[[t.NamedTuple], T_TesterResult],
         tests: dict[str, TestInterface[t.Any]],
-        generators: dict[str, st.rv_frozen],
+        generators: dict[str, gen.Generator],
     ) -> None:
         self._result_factory = result_factory
         self._tests = tests
