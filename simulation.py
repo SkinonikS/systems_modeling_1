@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import NamedTuple
 import scipy.stats as st
+import generators as gen
 
 class EventStatsType(NamedTuple):
     collected: EventStatsItem
@@ -126,8 +127,8 @@ class ArrivalEventHandler:
     def __init__(
         self,
         event_type: str,
-        arrival_time_generator: st.rv_frozen,
-        service_time_generator: st.rv_frozen,
+        arrival_time_generator: gen.Generator,
+        service_time_generator: gen.Generator,
     ) -> None:
         self._event_type = event_type
         self._arrival_time_generator = arrival_time_generator
@@ -166,10 +167,10 @@ class ArrivalEventHandler:
             event_log=simulation_data.event_log,
         ))
 
-    def get_service_time_generator(self) -> st.rv_frozen:
+    def get_service_time_generator(self) -> gen.Generator:
         return self._service_time_generator
     
-    def get_arrival_time_generator(self) -> st.rv_frozen:
+    def get_arrival_time_generator(self) -> gen.Generator:
         return self._arrival_time_generator
 
     def get_event_type(self) -> str:
